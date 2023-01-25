@@ -26,7 +26,6 @@ RUN rm README.md
 
 # # 6. Dockerfile3: Our final base (1.26GB)
 # # FROM rust:1.61
-
 # # 6. Dockerfile4: space-saving image variant (675MB)
 # # FROM rust:1.61-slim-buster
 
@@ -35,6 +34,14 @@ FROM debian:buster-slim
 
 # 7. Copy the build artifact from the build stage
 COPY --from=build /infinityper/target/release/infinityper .
+# https://stackoverflow.com/a/53897608 | How to pass arguments to Shell Script through docker run
+# RUN chmod 755 /infinityper/target/release/infinityper
 
+# https://stackoverflow.com/questions/31523551/how-can-i-pass-arguments-to-a-docker-container-with-a-python-entry-point-script
+#
 # 8. Set the startup command to run our binary
-CMD ["./infinityper"]
+# exec form
+# ENTRYPOINT ["./infinityper"]
+# shell form
+ENTRYPOINT ./infinityper
+# CMD ["./infinityper"]

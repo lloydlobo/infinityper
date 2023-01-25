@@ -40,7 +40,14 @@ inifinityper Hello, world! | head
 To start a `docker` container with the application, run:
 
 ```shell
-docker run -it --rm --name infinityper lloydlobo/infinityper:latest -- <infinityper arguments here>
+docker run -it --rm --name infinityper lloydlobo/infinityper:latest
+```
+
+To open an interactive `docker` container with the application binary in it, run:
+
+```shell
+docker run -it --rm --name infinityper --entrypoint bin/bash lloydlobo/infinityper:latest
+$ ./infinityper <infinityper arguments here>
 ```
 
 To stop the container from another shell instance, run:
