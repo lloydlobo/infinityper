@@ -29,7 +29,7 @@ inifinityper Hello, world!
 inifinityper Hello, world! | head
 ```
 
-### Demo with Docker
+## Demo with Docker
 
 - TODO: Add exit command to stop running `docker` container.
   - Note: Press `Ctrl`+`c` to exit.
@@ -45,6 +45,36 @@ To stop the container from another shell instance, run:
 
 ```shell
 docker stop $(docker ps | grep infinityper | head -c12)
+```
+
+## Build
+
+### To build your own image
+
+Download the repo:
+
+```shell
+git clone <https://github.com/lloydlobo/infinityper.git>
+```
+
+Ensure you navigate to the download location of the repo:
+
+```shell
+cd /path/to/download/infinityper
+```
+
+Build away!
+
+- With `Cargo`:
+
+```shell
+cargo build --release
+```
+
+- With `docker`:
+
+```shell
+docker build -t <yourimagename> .
 ```
 
 ## Background
