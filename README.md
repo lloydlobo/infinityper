@@ -31,13 +31,14 @@ inifinityper Hello, world! | head
 
 ### Demo with Docker
 
-- [ ] Add exit command to stop running docker container.
-      Note: Press `Ctrl`+`c` to exit.
+- TODO: Add exit command to stop running `docker` container.
+  - Note: Press `Ctrl`+`c` to exit.
+- TODO: Add `infinityper` arguments.
 
-To start a docker container with the application, run:
+To start a `docker` container with the application, run:
 
 ```shell
-docker run lloydlobo/infinityper
+docker run -it --rm --name infinityper lloydlobo/infinityper:latest -- <infinityper arguments here>
 ```
 
 To stop the container from another shell instance, run:
