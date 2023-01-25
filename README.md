@@ -79,6 +79,10 @@ cargo build --release
 docker build -t <yourimagename> .
 ```
 
+## Dependencies
+
+- [calm_io](https://crates.io/calm_io)
+
 ## Background
 
 [From calm_io](https://github.com/myrrlyn/calm_io/blob/main/examples/good_yes.rs):
@@ -87,7 +91,3 @@ A common idiom in UNIX computing is to prepend `yes |` to a pipeline in order to
 get interactive scripts to act without user input. The coreutils implementation
 of`yes(1)` crashes from SIGPIPE when the pipeline ends.
 This program does not.
-
-## Dependencies
-
-- [calm_io](https://crates.io/calm_io)
