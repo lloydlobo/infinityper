@@ -8,12 +8,16 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::if_not_else, clippy::non_ascii_literal)]
 
+// extern crate colorful;
+
 use std::{
     env::{self, Args},
     iter::Skip,
 };
 
 use calm_io::{pipefail, stdoutln};
+use colorful::{Color, Colorful};
+// use colorful::HSL;
 
 /// Default string to 'print' when to env args are provided when the binary is run.
 const DEFAULT_STDOUT_STRING: &str = "infinityper says hello...";
@@ -35,9 +39,20 @@ fn main() -> std::io::Result<()> {
     // This allows to print all args in one single line.
     let args: Vec<String> = vec![args.join(" ").trim().to_string()];
 
+    let colors = vec![
+        Color::Purple4b,
+        Color::Cyan,
+        Color::DodgerBlue1,
+        Color::Green3b,
+        Color::Yellow,
+        Color::OrangeRed1,
+        Color::PaleVioletRed1,
+    ];
+    let mut counter_color = 0;
     loop {
         for arg in &args {
             for (index, char) in arg.char_indices() {
+                let color = colors[counter_color % colors.len()];
                 sleep(150);
 
                 term_clear_screen();
@@ -45,8 +60,9 @@ fn main() -> std::io::Result<()> {
 
                 let index: usize = index + char.len_utf8();
                 let string: &str = &arg[..index];
-                stdoutln!("{}", string)?;
+                stdoutln!("{}", string.gradient(color))?;
             }
+            counter_color += 1;
         }
     }
 }
