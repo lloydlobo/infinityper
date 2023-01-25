@@ -29,6 +29,23 @@ inifinityper Hello, world!
 inifinityper Hello, world! | head
 ```
 
+### Demo with Docker
+
+- [ ] Add exit command to stop running docker container.
+      Note: Press `Ctrl`+`c` to exit.
+
+To start a docker container with the application, run:
+
+```shell
+docker run lloydlobo/infinityper
+```
+
+To stop the container from another shell instance, run:
+
+```shell
+docker stop $(docker ps | grep infinityper | head -c12)
+```
+
 ## Background
 
 [From calm_io](https://github.com/myrrlyn/calm_io/blob/main/examples/good_yes.rs):
