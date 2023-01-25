@@ -1,5 +1,7 @@
 # Infinityper
 
+![infinityper logo](https://github.com/lloydlobo/infinityper/blob/master/assets/logo.png)
+
 `inifinityper` simulates typed text in the terminal.
 
 A standin for the `yes` command, made with [calm_io](https://github.com/myrrlyn/calm_io),
