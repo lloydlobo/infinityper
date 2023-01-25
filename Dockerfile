@@ -21,10 +21,14 @@ RUN rm src/*.rs
 
 # 4. Now that the dependency is built, copy your source code
 COPY ./src ./src
+# COPY ./docs ./docs
+COPY README.md README.md
 
 # 5. Build for release.
 RUN rm ./target/release/deps/infinityper*
 RUN cargo build --release
+# RUN rm -rf ./docs
+RUN rm README.md
 
 # # 6. Dockerfile3: Our final base (1.26GB)
 # # FROM rust:1.61

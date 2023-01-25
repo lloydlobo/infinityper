@@ -1,41 +1,9 @@
-//! `inifinityper` simulates typed text in the terminal.
-//!
-//! A standin for the `yes` command, made with `calm_io`, insprired by `ouai` and built in Rust.
-//!
-//! # Installation
-//!
-//! You must have Rust installed on your machine, then you can install ouai by doing:
-//!
-//! ```shell
-//! cargo install infinityper
-//! ```
-//!
-//! # Usage
-//!
-//! Infinitely generate given strings in a typed form with `infinityper`:
-//!
-//! ## Generate infinitely
-//!
-//! ```shell
-//! inifinityper Hello, world!
-//! ```
-//!
-//! ## Generate once
-//!
-//! ```shell
-//! inifinityper Hello, world! | head
-//! ```
-//!
-//! # Reference
-//!
-//! [calm_io](https://github.com/myrrlyn/calm_io/blob/main/examples/good_yes.rs)
-//!
-//! Reimplementation of `yes(1)`, that does not die from SIGPIPE`.
-//! A common idiom in UNIX computing is to prepend `yes |` to a pipeline in order to
-//! get interactive scripts to act without user input. The coreutils implementation
-//! of `yes(1)` crashes from SIGPIPE when the pipeline ends.
-//! This program does not.
-
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/lloydlobo/infinityper/main/assets/logo_dark.png"
+)]
+// #![doc = include_str!("../docs/README.md")]
+#![doc = include_str!("../README.md")]
+#![forbid(unsafe_code)]
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::if_not_else, clippy::non_ascii_literal)]
@@ -48,7 +16,7 @@ use std::{
 use calm_io::{pipefail, stdoutln};
 
 /// Default string to 'print' when to env args are provided when the binary is run.
-const DEFAULT_STDOUT_STRING: &str = "infinityper says hello!";
+const DEFAULT_STDOUT_STRING: &str = "infinityper says hello...";
 
 /// Loop indefinitely while printing like a user is typing in the terminal.
 ///
