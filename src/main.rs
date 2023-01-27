@@ -7,8 +7,17 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::if_not_else, clippy::non_ascii_literal)]
 
+use std::{
+    fmt, process,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+};
+
 use calm_io::{pipefail, stdoutln};
-use colorful::{Color, Colorful}; // use colorful::HSL;
+use colorful::{Color, Colorful};
+// use colorful::HSL;
 use structopt::StructOpt;
 
 // ------------------------------------------------------------
@@ -37,6 +46,10 @@ Counting an endless repetition."#
     #[structopt(long, short, default_value = "18446744073709551615")]
     iterations: u64,
 
+    /// Repeat output without clearing the terminal at every new line
+    #[structopt(short, long = "repeat")]
+    repeat_output: bool,
+
     /// Set typing speed.
     #[structopt(short, long, default_value = "150")]
     speed: f64,
@@ -49,10 +62,6 @@ Counting an endless repetition."#
     /// Activate colored simulated typing
     #[structopt(short = "c", long = "color")]
     with_color: bool,
-
-    /// Repeat output without clearing the terminal at every new line
-    #[structopt(short, long = "repeat")]
-    repeat_output: bool,
 }
 
 // ------------------------------------------------------------
@@ -65,23 +74,40 @@ Counting an endless repetition."#
 /// * `len_utf8()` - Number of bytes this `char` would need if encoded in UTF-8.
 /// * `stdoutln!()` - Like `println!`, except it returns a `Result` rather than `panic!`king.
 #[pipefail]
-fn main() -> std::io::Result<()> {
+fn main() -> std::io::Result<String> {
     let cli = Opt::from_args();
-    let args: String = cli.input;
-    let args: Vec<String> = args.lines().map(String::from).collect();
+    if !cli.repeat_output {
+        term_clear_screen_cursor_to_origin();
+    }
+    let input: String = cli.input.clone();
+    let args: Vec<String> = input.lines().map(String::from).collect();
+
     let colors = get_color_variants();
 
     let mut counter_color = 0;
     let mut counter_iterations = 0;
     let mut counter_line_break = 0;
 
-    if !cli.repeat_output {
-        term_clear_screen_cursor_to_origin();
-    }
-
-    loop {
+    // let running = Arc::new(AtomicUsize::new(0));
+    // let r = running.clone();
+    // {
+    //     ctrlc::set_handler(move || {
+    //         let prev = r.fetch_add(1, Ordering::SeqCst);
+    //         if prev == 0 {
+    //             log::info!("Exiting...");
+    //             println!();
+    //         } else {
+    //             process::exit(0);
+    //         }
+    //     })
+    //     .expect("Should set Ctrl-C handler");
+    // }
+    'l: loop {
         for arg in &args {
             for (i, char) in arg.char_indices() {
+                // if running.load(Ordering::SeqCst) > 0 {
+                //     break 'l Ok(input);
+                // }
                 if !cli.repeat_output {
                     if i == 0 {
                         counter_line_break += 1;
@@ -98,13 +124,12 @@ fn main() -> std::io::Result<()> {
                     stdoutln!("{}", string)?;
                 }
 
-                // counter_color += 1; //each line gets next color.
                 sleep(cli.speed as u64); //150ms to simulate human typing
             }
-            counter_color += 1; // each content newline sentence gets next color
             if counter_iterations.cmp(&cli.iterations).is_ge() {
-                return Ok(());
+                return Ok(input);
             } else {
+                counter_color += 1; // each content newline sentence gets next color
                 continue;
             }
         }
@@ -152,4 +177,33 @@ fn get_color_variants() -> Vec<Color> {
         Color::OrangeRed1,
         Color::PaleVioletRed1,
     ]
+}
+
+// ------------------------------------------------------------
+
+/// Represents a key.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
+pub enum Key {
+    /// Enter or Return key
+    Enter,
+    Tab,
+    Backspace,
+    Esc,
+
+    Char(char),
+    Ctrl(char),
+    Unknown,
+}
+
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Key::Char(' ') => write!(f, "<Space>"),
+            Key::Ctrl(' ') => write!(f, "<Ctrl+Space>"),
+            Key::Char(c) => write!(f, "{}", c),
+            Key::Ctrl(c) => write!(f, "<Ctrl+{}>", c),
+            Key::Enter | Key::Tab | Key::Backspace | Key::Esc => write!(f, "<{:?}>", self),
+            _ => write!(f, "{:?}", self), // Keys::Unknown => todo!(),
+        }
+    }
 }

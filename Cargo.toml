@@ -9,6 +9,9 @@ edition = "2021"
 anyhow = "1.0.68"
 calm_io = "0.1.1"
 colorful = "0.2.2"
+crossbeam = { version = "0.8.2", features = ["crossbeam-channel"] }
+ctrlc = { version = "3.2.4", features = ["termination"] }
+log = "0.4.17"
 structopt = "0.3.26"
 
 [profile.release]
