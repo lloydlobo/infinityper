@@ -33,7 +33,7 @@ Counting an endless repetition."#
     )]
     input: String,
 
-    /// No. of times to repeat typing
+    /// No. of times to iterate typing
     #[structopt(long, short, default_value = "18446744073709551615")]
     iterations: u64,
 
@@ -50,9 +50,9 @@ Counting an endless repetition."#
     #[structopt(short = "c", long = "color")]
     with_color: bool,
 
-    /// Clear terminal at every new line
-    #[structopt(long = "clear")]
-    clear_screen: bool,
+    /// Repeat output without clearing the terminal at every new line
+    #[structopt(short, long = "repeat")]
+    repeat_output: bool,
 }
 
 // ------------------------------------------------------------
@@ -75,14 +75,14 @@ fn main() -> std::io::Result<()> {
     let mut counter_iterations = 0;
     let mut counter_line_break = 0;
 
-    if cli.clear_screen {
+    if !cli.repeat_output {
         term_clear_screen_cursor_to_origin();
     }
 
     loop {
         for arg in &args {
             for (i, char) in arg.char_indices() {
-                if cli.clear_screen {
+                if !cli.repeat_output {
                     if i == 0 {
                         counter_line_break += 1;
                     }
@@ -108,7 +108,7 @@ fn main() -> std::io::Result<()> {
                 continue;
             }
         }
-        if cli.clear_screen {
+        if !cli.repeat_output {
             counter_line_break = 0; // reset line break counter after each iteration.
             term_clear_screen_cursor_to_origin();
         }
@@ -122,15 +122,17 @@ fn main() -> std::io::Result<()> {
 /// * `\x1b[1;1H` - sets the cursor position to `(1;1)`.
 ///
 /// [Source](https://stackoverflow.com/a/62101709)
-#[allow(dead_code)]
 fn term_clear_screen_cursor_to_origin() {
     print!("\x1B[2J\x1B[1;1H");
 }
-
+/// Clear the screen.
+/// ANSII escape chars - `\x1b[2J`
+#[allow(dead_code)]
 fn term_clear_screen() {
     print!("\x1B[2J");
 }
-/// Basic - print!("\x1B[1;1H");
+/// Move the cursor to the first row & first col of the screen.
+/// ANSII escape chars - `\x1B[1;1H`
 fn term_move_cursor_to(x: usize, y: usize) {
     print!("\x1B[{x};{y}H");
 }
