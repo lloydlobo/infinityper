@@ -7,16 +7,26 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::if_not_else, clippy::non_ascii_literal)]
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 use std::{
     fmt, process,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
+    time::Duration,
 };
 
-use calm_io::{pipefail, stdoutln};
+use anyhow::Result;
+use calm_io::{pipefail, stdout, stdoutln};
 use colorful::{Color, Colorful};
+use crossbeam::{
+    channel::{bounded, tick, Receiver},
+    select,
+};
 // use colorful::HSL;
 use structopt::StructOpt;
 
@@ -42,9 +52,9 @@ Counting an endless repetition."#
     )]
     input: String,
 
-    /// No. of times to iterate typing
-    #[structopt(long, short, default_value = "18446744073709551615")]
-    iterations: u64,
+    /// No. of times to run iteration of typing
+    #[structopt(short = "r", long = "runs", default_value = "18446744073709551615")]
+    iteration_runs: u64,
 
     /// Repeat output without clearing the terminal at every new line
     #[structopt(short, long = "repeat")]
@@ -75,6 +85,7 @@ Counting an endless repetition."#
 /// * `stdoutln!()` - Like `println!`, except it returns a `Result` rather than `panic!`king.
 #[pipefail]
 fn main() -> std::io::Result<String> {
+    let ticks = tick(Duration::from_secs(1));
     let cli = Opt::from_args();
     if !cli.repeat_output {
         term_clear_screen_cursor_to_origin();
@@ -90,23 +101,31 @@ fn main() -> std::io::Result<String> {
 
     // let running = Arc::new(AtomicUsize::new(0));
     // let r = running.clone();
-    // {
-    //     ctrlc::set_handler(move || {
-    //         let prev = r.fetch_add(1, Ordering::SeqCst);
-    //         if prev == 0 {
-    //             log::info!("Exiting...");
-    //             println!();
-    //         } else {
-    //             process::exit(0);
-    //         }
-    //     })
-    //     .expect("Should set Ctrl-C handler");
-    // }
-    'l: loop {
+    // ctrlc::set_handler(move || {
+    //     let prev = r.fetch_add(1, Ordering::SeqCst);
+    //     if prev == 0 { log::info!("Exiting..."); } else { process::exit(0); }
+    // }).expect("Should set Ctrl-C handler");
+
+    // let ctrl_c_events = ctrl_channel().unwrap();
+
+    loop {
+        if counter_iterations.cmp(&cli.iteration_runs).is_ge() {
+            return Ok(input);
+        } // can move this to while instead of loop?
+          // select! {
+          //     recv(ticks)-> _ => {
+          //         println!("working!");
+          //     }
+          //     recv(ctrl_c_events)->_ => {
+          //         println!();
+          //         println!("Goodbye!");
+          //         break Ok(input);
+          //     }
+          // }
         for arg in &args {
             for (i, char) in arg.char_indices() {
                 // if running.load(Ordering::SeqCst) > 0 {
-                //     break 'l Ok(input);
+                //     break Ok(input);
                 // }
                 if !cli.repeat_output {
                     if i == 0 {
@@ -122,16 +141,15 @@ fn main() -> std::io::Result<String> {
                     stdoutln!("{}", string.gradient(color))?;
                 } else {
                     stdoutln!("{}", string)?;
+                    // select! {
+                    //   recv(ticks)-> _ => {
+                    //       print!(" <");
+                    //   }
+                    // }
                 }
-
                 sleep(cli.speed as u64); //150ms to simulate human typing
             }
-            if counter_iterations.cmp(&cli.iterations).is_ge() {
-                return Ok(input);
-            } else {
-                counter_color += 1; // each content newline sentence gets next color
-                continue;
-            }
+            counter_color += 1; // each content newline sentence gets next color
         }
         if !cli.repeat_output {
             counter_line_break = 0; // reset line break counter after each iteration.
@@ -140,6 +158,19 @@ fn main() -> std::io::Result<String> {
         counter_iterations += 1;
     }
 }
+
+// ------------------------------------------------------------
+
+/// [Reference](https://rust-cli.github.io/book/in-depth/signals.html#using-channels)
+fn ctrl_channel() -> Result<Receiver<()>, ctrlc::Error> {
+    let (sender, receiver) = bounded(100);
+    ctrlc::set_handler(move || {
+        let _ = sender.send(());
+    })?;
+    Ok(receiver)
+}
+
+// ------------------------------------------------------------
 
 /// Clear the screen and put the cursor at first row & first col of the screen.
 ///
@@ -162,10 +193,14 @@ fn term_move_cursor_to(x: usize, y: usize) {
     print!("\x1B[{x};{y}H");
 }
 
+// ------------------------------------------------------------
+
 /// Puts the current thread to sleep for `millis` amount of time in milliseconds.
 fn sleep(millis: u64) {
     std::thread::sleep(std::time::Duration::from_millis(millis))
 }
+
+// ------------------------------------------------------------
 
 fn get_color_variants() -> Vec<Color> {
     vec![
@@ -205,5 +240,66 @@ impl fmt::Display for Key {
             Key::Enter | Key::Tab | Key::Backspace | Key::Esc => write!(f, "<{:?}>", self),
             _ => write!(f, "{:?}", self), // Keys::Unknown => todo!(),
         }
+    }
+}
+
+// ------------------------------------------------------------
+
+/// .context("Should wrap around colors infinitely for consecutive indexes")
+// fn next_color_wrap(i: usize, colors: Vec<Color>) -> anyhow::Result<Color> {
+//     let len = colors.len();
+//     Ok(colors[i % len])
+// }
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use quickcheck::{quickcheck, TestResult};
+
+    use super::*;
+
+    // ------------------------------------------------------------
+
+    fn reverse<T>(xs: &[T]) -> Vec<T>
+    where
+        T: Clone,
+    {
+        let mut rev = vec![];
+        for x in xs.iter() {
+            rev.insert(0, x.clone())
+        }
+        rev
+    }
+
+    // fn wrap_nums(nums: Vec<u32>) -> u32 { nums.iter().next().cloned().unwrap() }
+
+    // ------------------------------------------------------------
+
+    quickcheck! {
+        fn prop_rev(xs: Vec<u32>) -> bool {
+            xs == reverse(&reverse(&xs))
+        }
+    }
+
+    #[test]
+    fn it_sleeps() {
+        for i in 0..1000 {
+            let start = Instant::now();
+            sleep(i);
+            let elapsed = start.duration_since(start);
+            assert_eq!(Duration::from_millis(i), elapsed);
+        }
+    }
+
+    #[test]
+    fn it_reverse_single() {
+        fn prop(xs: Vec<isize>) -> TestResult {
+            if xs.len() != 1 {
+                return TestResult::discard();
+            }
+            TestResult::from_bool(xs == reverse(&*xs))
+        }
+        quickcheck(prop as fn(Vec<isize>) -> TestResult);
     }
 }
