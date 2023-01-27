@@ -7,12 +7,6 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::if_not_else, clippy::non_ascii_literal)]
 
-use std::{
-    env::{self, Args},
-    iter::Skip,
-    path::PathBuf,
-};
-
 use calm_io::{pipefail, stdoutln};
 use colorful::{Color, Colorful}; // use colorful::HSL;
 use structopt::StructOpt;
@@ -74,50 +68,51 @@ Counting an endless repetition."#
 fn main() -> std::io::Result<()> {
     let cli = Opt::from_args();
     let args: String = cli.input;
-    // This allows to print all args in one single line.
     let args: Vec<String> = args.lines().map(String::from).collect();
-    // let args: Vec<String> = vec![args.trim().to_string()];
-
     let colors = get_color_variants();
 
     let mut counter_color = 0;
-    let mut counter_iter = 0;
+    let mut counter_iterations = 0;
     let mut counter_line_break = 0;
 
     if cli.clear_screen {
-        term_clear_screen();
-        term_move_cursor_to(1, 1); // term_move_cursor_to(i, i_len); // Bizzare
+        term_clear_screen_cursor_to_origin();
     }
+
     loop {
         for arg in &args {
             for (i, char) in arg.char_indices() {
-                sleep(cli.speed as u64); // 150ms
                 if cli.clear_screen {
                     if i == 0 {
                         counter_line_break += 1;
                     }
                     term_move_cursor_to(counter_line_break, 1);
                 }
-                let color = colors[counter_color % colors.len()];
                 let i_len: usize = i + char.len_utf8();
                 let string: &str = &arg[..i_len];
                 if cli.with_color {
+                    // Wrap around available colors back to 0 index.
+                    let color = colors[counter_color % colors.len()];
                     stdoutln!("{}", string.gradient(color))?;
                 } else {
                     stdoutln!("{}", string)?;
                 }
+
+                // counter_color += 1; //each line gets next color.
+                sleep(cli.speed as u64); //150ms to simulate human typing
             }
-            if counter_iter >= cli.iterations {
+            counter_color += 1; // each content newline sentence gets next color
+            if counter_iterations.cmp(&cli.iterations).is_ge() {
                 return Ok(());
+            } else {
+                continue;
             }
-            counter_color += 1;
         }
         if cli.clear_screen {
             counter_line_break = 0; // reset line break counter after each iteration.
-            term_clear_screen();
-            term_move_cursor_to(1, 1);
+            term_clear_screen_cursor_to_origin();
         }
-        counter_iter += 1;
+        counter_iterations += 1;
     }
 }
 
@@ -128,7 +123,7 @@ fn main() -> std::io::Result<()> {
 ///
 /// [Source](https://stackoverflow.com/a/62101709)
 #[allow(dead_code)]
-fn term_clear_screen_cursor_origin() {
+fn term_clear_screen_cursor_to_origin() {
     print!("\x1B[2J\x1B[1;1H");
 }
 
